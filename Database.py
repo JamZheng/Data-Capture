@@ -6,43 +6,42 @@ flag = 0 添加新的ip流量信息
 flag = 1 更新已存在的ip流量
 '''
 def updateIP(database, ip, cnt, protocol):
-    print('update')
     db = database
     ip = str(ip)
     protocol = str(protocol)
     cnt = str(cnt)
     cursor = db.cursor()
 
-    sql = "SELECT COUNT(*) FROM %s流量统计 WHERE IP = %s;" % (protocol, ip)
+    sql = "SELECT COUNT(*) FROM %s流量统计 WHERE IP = '%s';" % (protocol, ip)
     try:
         cursor.execute(sql)
         flag = cursor.fetchall()
     except:
         print("error when select count")
-
-
-    if flag == '0':
+    flag = str(flag)
+    if flag == '((0,),)':
         addNewIP(database, ip, cnt, protocol)
     else:
         addOldip(database, ip, cnt, protocol)
 
 
 def addNewIP(database, ip, cnt, protocol):
+    print('add new')
     db = database
     ip = str(ip)
     protocol = str(protocol)
     cnt = str(cnt)
     cursor = db.cursor()
-
+    print('add new')
     if protocol == 'UDP':
-        sql = "INSERT INTO UDP流量统计(IP,count) VALUES (%s, %s)" % (ip, cnt)
+        sql = "INSERT INTO UDP流量统计(IP,count) VALUES ('%s', %s)" % (ip, cnt)
         try:
             cursor.execute(sql)
             db.commit()
         except:
             db.rollback()
     if protocol == 'TCP':
-        sql = "INSERT INTO TCP流量统计(IP,count) VALUES (%s, %s)" % (ip, cnt)
+        sql = "INSERT INTO TCP流量统计(IP,count) VALUES ('%s', %s)" % (ip, cnt)
         try:
             cursor.execute(sql)
             db.commit()
