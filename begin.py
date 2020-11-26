@@ -9,10 +9,9 @@ def main():
     db = pymysql.connect("39.108.102.157", "", "", "network", charset='utf8' )
     print('database connect ')
 
-    run_t = 180 # time(s)
+    run_t = 120 # time(s)
     begin_t = time.time()
     end_t = begin_t + run_t - 100
-
     cap = catch.capturePackege(time = 0,inter = 'WLAN',filter = 'tcp||udp')
     while end_t - begin_t < run_t:
         caplist = []
@@ -20,7 +19,12 @@ def main():
             caplist.append(packet)
 
         catch.trafficCnt(caplist, db)
-        end_t = time.time()
+
+        pattern = catch.getDirtyPattern()
+        catch.dirtyWordDetect(db,caplist,pattern)
+        
+        end_t = time.time()  
+        print(end_t - begin_t)
     
     #关闭数据库
     db.close()

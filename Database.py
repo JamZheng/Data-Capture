@@ -75,6 +75,24 @@ def addOldip(database, ip, cnt, protocol):
 
     return
 
+def dirtyWordRecord(database, ip, dirtyword, time):
+    print('dirty word!')
+    db = database
+    ip = str(ip)
+    dw = str(dirtyword)
+    t = str(time)
+    cursor = db.cursor()
+
+    sql = "INSERT INTO 敏感词记录(来源ip,敏感词,时间) VALUES ('%s', '%s','%s')" % (ip, dw ,t)
+    try:
+        cursor.execute(sql)
+        db.commit()
+    except:
+        db.rollback()
+
+    return
+
+
 
 # test
 '''
