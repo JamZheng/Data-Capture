@@ -1,8 +1,6 @@
 import os
-from flask import Flask
-from flask import jsonify
+from flask import Flask,request,jsonify,render_template
 from flask_cors import CORS  # 解决跨域的问题
-from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 app = Flask(__name__)
@@ -25,13 +23,59 @@ class UDPCnt(db.Model):
     def __repr__(self):
         return 'UDPcnt:%s %d'% (self.ip, self.count)
 
+class TCPCnt(db.Model):
+    __tablename__ = 'TCP流量统计'
+    count = db.Column(db.Integer)
+    ip = db.Column(db.String(255),primary_key=True)
+    def __repr__(self):
+        return 'TCPcnt:%s %d'% (self.ip, self.count)
 
+class DirtyWord(db.Model):
+    __tablename__ = '敏感词记录'
+    No = db.Column(db.Integer,primary_key=True)
+    来源ip = db.Column(db.String(255),comment='来源ip')
+    敏感词 = db.Column(db.String(255),comment='敏感词')
+    时间 = db.Column(db.String(255),comment='时间')
+    def __repr__(self):
+        return 'Dirty word record:%s %s %s'% (self.sourceIP, self.dirtyword, self.timing)
 
+#返回udp流量统计信息
 @app.route('/cnt/udp', methods=["GET"])
 def get_cnt_udp():
-    
-    data = UDPCnt.query.all()
-    return jsonify(data)
+    alldata = UDPCnt.query.all()
+    json = []
+    tempdata = {}
+    for data in alldata:
+        tempdata['ip'] = data.ip
+        tempdata['count'] = data.count
+        json.append(tempdata)
+        tempdata = {}
+    return jsonify(json)
+
+@app.route('/cnt/tcp', methods=["GET"])
+def get_cnt_tcp():
+    alldata = TCPCnt.query.all()
+    json = []
+    tempdata = {}
+    for data in alldata:
+        tempdata['ip'] = data.ip
+        tempdata['count'] = data.count
+        json.append(tempdata)
+        tempdata = {}
+    return jsonify(json)
+
+@app.route('/dirtyword', methods=["GET"])
+def get_dirtyword_info():
+    alldata = DirtyWord.query.all()
+    json = []
+    tempdata = {}
+    for data in alldata:
+        tempdata['dirtyword'] = data.敏感词
+        tempdata['sourceip'] = data.来源ip
+        tempdata['time'] = data.时间
+        json.append(tempdata)
+        tempdata = {}
+    return jsonify(json)
 
 @app.route('/user_data', methods=["GET"])
 def get_user_data():
