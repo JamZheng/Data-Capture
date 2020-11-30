@@ -1,4 +1,6 @@
+# 数据库操作文件
 import pymysql
+
 
 
 '''
@@ -75,15 +77,14 @@ def addOldip(database, ip, cnt, protocol):
 
     return
 
-def dirtyWordRecord(database, ip, dirtyword, time):
+def dirtyWordRecord(database, ip, dirtyword):
     print('dirty word!')
     db = database
     ip = str(ip)
     dw = str(dirtyword)
-    t = str(time)
     cursor = db.cursor()
 
-    sql = "INSERT INTO 敏感词记录(来源ip,敏感词,时间) VALUES ('%s', '%s','%s')" % (ip, dw ,t)
+    sql = "INSERT INTO 敏感词记录(来源ip,敏感词) VALUES ('%s', '%s','%s')" % (ip, dw)
     try:
         cursor.execute(sql)
         db.commit()
@@ -92,12 +93,23 @@ def dirtyWordRecord(database, ip, dirtyword, time):
 
     return
 
+def getDirtyWordList(database):
+    db = database
+    cursor = db.cursor()
 
+    sql = "SELECT 敏感词 FROM 敏感词词库"
+    try:
+        cursor.execute(sql)
+        dirtywordlist = cursor.fetchall()
+    except:
+        print("error when get list")
+    
+    return dirtywordlist
 
 # test
 '''
 # 打开数据库连接
-db = pymysql.connect("39.108.102.157", "root", "123456",
+db = pymysql.connect("39.108.102.157", "", "",
                      "network", charset='utf8')
 # 关闭数据库连接
 db.close()

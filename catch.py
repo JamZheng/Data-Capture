@@ -4,11 +4,13 @@ import pymysql
 import re
 import time 
 
-#not done,for test
+#流量统计函数，将抓取到的数据包根据UDP以及TCP协议分别进行对应IP的数量统计
 def trafficCnt(capture,db):
+    #根据协议过滤数据包
     tcp_capture = transportFilter(capture, protocol = 'TCP')
     udp_capture = transportFilter(capture, protocol = 'UDP')
     
+    #更新数据库
     #tpc
     src_ip_dic, des_ip_dic = addressCnt(tcp_capture)
     for ip in des_ip_dic.keys():
@@ -28,6 +30,7 @@ def trafficCnt(capture,db):
     return
 
 
+# 用于抓取数据包，创建LiveCapture
 def capturePackege(time = 0,inter = 'WLAN',filter = ''):
     capture = pyshark.LiveCapture(interface = inter,bpf_filter = filter)
     capture.clear()
@@ -42,9 +45,11 @@ def capturePackege(time = 0,inter = 'WLAN',filter = ''):
     capture.set_debug()
     return capture
 
+
 def protocolFilter(capture):
     return 
 
+# 根据数据包来源以及目的地址计算流量
 def addressCnt(capture):
     src_ip_dic = {}
     des_ip_dic = {}
@@ -69,6 +74,7 @@ def testData(capture):
         if 'http' in packet:
             print(packet.http)
 
+# 根据传输层协议过滤数据包
 def transportFilter(capture, protocol):
     filter = []
     for packet in capture:
@@ -76,12 +82,14 @@ def transportFilter(capture, protocol):
             filter.append(packet)
     return filter
 
+# 获取数据包最高层协议
 def getHighestLayer(capture):
     layers = []
     for packege in capture:
        layers.append(packege.highest_layer)
     return layers 
 
+# 敏感词检测（待优化
 def dirtyWordDetect(db,capture,pattern):
     for packege in capture:
         string = str(packege)
@@ -91,29 +99,27 @@ def dirtyWordDetect(db,capture,pattern):
             return
         if result:
             # 记录下这个敏感词内容以及来源
-            t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  #获取当前时间
+            #t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  #获取当前时间(改为直接用数据库的时间戳)
             for dirtyword in result:
-                data.dirtyWordRecord(db,packege.ip.src,dirtyword,t)
+                data.dirtyWordRecord(db,packege.ip.src,dirtyword)
 
     return 
 
-#这个函数可以改写成从某个文件中读取敏感词的识别模式（正则表达式）
-def getDirtyPattern():
-    pattern = 'POST'
+#从数据库取出敏感词列表处理后作为匹配模式
+def getDirtyPattern(db):
+    pattern = 'shit'
+    wordlist = data.getDirtyWordList(db)
+    for word in wordlist:
+        # 按照或的形式取出
+        pattern = pattern + '|' + word[0]
     return pattern
 
 
 '''
 if __name__ == "__main__":
-    db = pymysql.connect("39.108.102.157", "root", "123456", "network", charset='utf8' )
+    db = pymysql.connect("39.108.102.157", "", "", "network", charset='utf8' )
 
-    cap = capturePackege(time = 5,inter = 'WLAN')
-
-    trafficCnt(db, cap)
-    #关闭数据库
+    print(getDirtyPattern(db))
 
     db.close()
-    capture = capturePackege(10)
-    tcp_capture = transportFilter(capture, protocol = 'TCP')
-    udp_capture = transportFilter(capture, protocol = 'UDP')
 '''
