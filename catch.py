@@ -69,10 +69,11 @@ def addressCnt(capture):
     return src_ip_dic, des_ip_dic
 
 
-def testData(capture):
+def testchatData(capture):
+    ip = '139.224.42.221'
     for packet in capture:
-        if 'http' in packet:
-            print(packet.http)
+        if packet.ip.src == ip or packet.ip.dst == ip:
+            print(packet)
 
 # 根据传输层协议过滤数据包
 def transportFilter(capture, protocol):
@@ -83,10 +84,12 @@ def transportFilter(capture, protocol):
     return filter
 
 # 获取数据包最高层协议
-def getHighestLayer(capture):
+def gethttp(capture):
     layers = []
     for packege in capture:
-       layers.append(packege.highest_layer)
+        if packege.highest_layer == 'URLENCODED-FORM':
+            print(packege)
+        #print(packege.http)
     return layers 
 
 # 敏感词检测（待优化
@@ -94,9 +97,6 @@ def dirtyWordDetect(db,capture,pattern):
     for packege in capture:
         string = str(packege)
         result = re.findall(pattern, string, flags=0)
-        if result: 
-            print(packege)
-            return
         if result:
             # 记录下这个敏感词内容以及来源
             #t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  #获取当前时间(改为直接用数据库的时间戳)

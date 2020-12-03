@@ -28,13 +28,11 @@ def updateIP(database, ip, cnt, protocol):
 
 
 def addNewIP(database, ip, cnt, protocol):
-    print('add new')
     db = database
     ip = str(ip)
     protocol = str(protocol)
     cnt = str(cnt)
     cursor = db.cursor()
-    print('add new')
     if protocol == 'UDP':
         sql = "INSERT INTO UDP流量统计(IP,count) VALUES ('%s', %s)" % (ip, cnt)
         try:
@@ -84,7 +82,7 @@ def dirtyWordRecord(database, ip, dirtyword):
     dw = str(dirtyword)
     cursor = db.cursor()
 
-    sql = "INSERT INTO 敏感词记录(来源ip,敏感词) VALUES ('%s', '%s','%s')" % (ip, dw)
+    sql = "INSERT INTO 敏感词记录(来源ip,敏感词) VALUES ('%s', '%s')" % (ip, dw)
     try:
         cursor.execute(sql)
         db.commit()
@@ -105,6 +103,34 @@ def getDirtyWordList(database):
         print("error when get list")
     
     return dirtywordlist
+
+def clearTable(database,tablename):
+    db = database
+    cursor = db.cursor()
+
+    sql = "truncate table %s;" % tablename
+    try:
+        cursor.execute(sql)
+        db.commit()
+    except:
+        db.rollback()
+    return
+
+
+def updateConnected(database,ip,number):
+    db = database
+    ip = str(ip)
+    number = str(number)
+    cursor = db.cursor()
+
+    sql = "INSERT INTO 当前设备(No,ip) VALUES (%s,'%s')" % (number, ip)
+    try:
+        cursor.execute(sql)
+        db.commit()
+    except:
+        db.rollback()
+
+    return
 
 # test
 '''

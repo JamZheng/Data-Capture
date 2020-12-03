@@ -3,7 +3,20 @@ from flask import Flask,request,jsonify,render_template
 from flask_cors import CORS  # 解决跨域的问题
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
+from gethost import getIP
+import time
+import threading
 app = Flask(__name__)
+
+userIP,userAR = getIP()
+
+#多线程，持续更新在线列表
+def getDevice(t):
+    global userIP,userAR
+    while True:
+        userIP,userAR = getIP()
+        print('列表更新')
+        time.sleep(t)
 
 #导入数据库配置
 app.config.from_object(Config)
@@ -49,6 +62,7 @@ class DirtyWordInfo(db.Model):
     def __repr__(self):
         return 'Dirty word record:%s %s %s'% (self.来源ip, self.敏感词, self.时间)
 
+
 # 返回udp流量统计信息
 @app.route('/cnt/udp', methods=["GET"])
 def get_cnt_udp():
@@ -56,10 +70,11 @@ def get_cnt_udp():
     json = []
     tempdata = {}
     for data in alldata:
-        tempdata['ip'] = data.ip
-        tempdata['count'] = data.count
-        json.append(tempdata)
-        tempdata = {}
+        if data.ip in userIP:
+            tempdata = {}
+            tempdata['ip'] = data.ip
+            tempdata['count'] = data.count
+            json.append(tempdata)
     return jsonify(json)
 
 # 返回tcp流量统计信息
@@ -69,10 +84,11 @@ def get_cnt_tcp():
     json = []
     tempdata = {}
     for data in alldata:
-        tempdata['ip'] = data.ip
-        tempdata['count'] = data.count
-        json.append(tempdata)
-        tempdata = {}
+        if data.ip in userIP:
+            tempdata = {}
+            tempdata['ip'] = data.ip
+            tempdata['count'] = data.count
+            json.append(tempdata)
     return jsonify(json)
 
 # 返回敏感词检测信息
@@ -118,6 +134,14 @@ def get_dirtyword():
 # 返回接入用户信息
 @app.route('/user_data', methods=["GET"])
 def get_user_data():
+    data = []
+    for i in range(len(userIP)):
+        dic = {}
+        dic["ip"] = userIP[i]
+        dic["address"] = userAR[i]
+        data.append(dic)
+
+    '''
     data = [{
           'time': '2020-11-18',
           'username': 'Nuo',
@@ -129,8 +153,12 @@ def get_user_data():
             'ip': '192.168.0.1'
         },
     ]
+    '''
     return jsonify(data)
 
 
 if __name__ == '__main__':
+    th_get = threading.Thread(target=getDevice, args=(15,))
+    th_get.start()
+
     app.run(debug=True)
