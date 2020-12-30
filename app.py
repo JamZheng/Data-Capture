@@ -9,19 +9,37 @@ import threading
 app = Flask(__name__)
 
 # 连接用户更新间隔时间
-updateTime = 20
+updateTime = 60
 
-userIP, userAR = getIP()
-
+# userIP, userAR = getIP()
+userIP = []
+userIP = []
 # 多线程，持续更新在线列表
 
 
 def getDevice(t):
-    global userIP, userAR
+    global userIP
+    global userAR
     while True:
-        userIP, userAR = getIP()
-        print('列表更新')
+        alldata = ConnectedDevice.query.all()
+        userIP = []
+        userAR = []
+        for data in alldata:
+            userIP.append(data.ip)
+            userAR.append(data.物理地址)
         time.sleep(t)
+
+def getConnect():
+        global userIP
+        global userAR
+        alldata = ConnectedDevice.query.all()
+        userIP = []
+        userAR = []
+        for data in alldata:
+            userIP.append(data.ip)
+            userAR.append(data.物理地址)
+        return
+
 
 
 # 导入数据库配置
@@ -90,6 +108,8 @@ class ConnectedDevice(db.Model):
 # 返回udp流量统计信息
 @app.route('/cnt/udp', methods=["GET"])
 def get_cnt_udp():
+    getConnect()
+    global userIP
     json = []
     tempdata = []
     for ip in userIP:
@@ -104,6 +124,8 @@ def get_cnt_udp():
 # 返回tcp流量统计信息
 @app.route('/cnt/tcp', methods=["GET"])
 def get_cnt_tcp():
+    getConnect()
+    global userIP
     json = []
     tempdata = []
     for ip in userIP:
@@ -115,21 +137,61 @@ def get_cnt_tcp():
     json = [userIP, tempdata]
     return jsonify(json)
 
+# 返回udp0流量统计信息
+@app.route('/cnt/udp0', methods=["GET"])
+def get_cnt_udp0():
+    getConnect()
+    global userIP
+    json = []
+    tempdata = []
+    for ip in userIP:
+        data = UDPCnt.query.filter(UDPCnt.IP == ip).first()
+        if data:
+            dic = {}
+            dic["ip"] = ip
+            dic["count"] = data.count
+            json.append(dic)
+        else:
+            dic = {}
+            dic["ip"] = ip
+            dic["count"] = 0
+            json.append(dic)
+    return jsonify(json)
+
+# 返回tcp0流量统计信息
+@app.route('/cnt/tcp0', methods=["GET"])
+def get_cnt_tcp0():
+    getConnect()
+    global userIP
+    json = []
+    tempdata = []
+    for ip in userIP:
+        data = TCPCnt.query.filter(TCPCnt.IP == ip).first()
+        if data:
+            dic = {}
+            dic["ip"] = ip
+            dic["count"] = data.count
+            json.append(dic)
+        else:
+            dic = {}
+            dic["ip"] = ip
+            dic["count"] = 0
+            json.append(dic)
+    return jsonify(json)
+
+
 # 返回敏感词检测信息
-
-
 @app.route('/dirtyword', methods=["GET"])
 def get_dirtyword_info():
     alldata = DirtyWordInfo.query.all()
     json = []
     tempdata = {}
     for data in alldata:
-        if networkSeg in data.来源ip:
-            tempdata = {}
-            tempdata['dirtyword'] = data.敏感词
-            tempdata['sourceip'] = data.来源ip
-            tempdata['time'] = data.时间
-            json.append(tempdata)
+        tempdata = {}
+        tempdata['dirtyword'] = data.敏感词
+        tempdata['sourceip'] = data.来源ip
+        tempdata['time'] = data.时间
+        json.append(tempdata)
     return jsonify(json)
 
 
@@ -137,7 +199,8 @@ def get_dirtyword_info():
 @app.route('/dirtyword/add/<dw>', methods=["GET"])
 def add_dirtyword(dw):
     # 增加：
-    article = DirtyWordSet(敏感词=str(dw))
+    t = time.asctime( time.localtime(time.time()) )
+    article = DirtyWordSet(敏感词=str(dw),时间=str(t))
     db.session.add(article)
     db.session.commit()
     return str(dw)
@@ -174,6 +237,7 @@ def get_user_data():
 # 返回用户接入信息（数据库）
 @app.route('/user_data', methods=["GET"])
 def get_user_data():
+    global userIP,userAR
     alldata = ConnectedDevice.query.all()
     json = []
     userIP = []
@@ -189,7 +253,7 @@ def get_user_data():
 
 
 if __name__ == '__main__':
-    #th_get = threading.Thread(target=getDevice, args=(updateTime,))
-    #th_get.start()
+    # th_get = threading.Thread(target=getDevice, args=(updateTime,))
+    # th_get.start()
 
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=True,port=5000)
