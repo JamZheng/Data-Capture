@@ -3,6 +3,8 @@ import Database as data
 import pymysql
 import re
 import time 
+from config import website
+
 
 #流量统计函数，将抓取到的数据包根据UDP以及TCP协议分别进行对应IP的数量统计
 def trafficCnt(capture,db):
@@ -11,7 +13,7 @@ def trafficCnt(capture,db):
     udp_capture = transportFilter(capture, protocol = 'UDP')
     
     #更新数据库
-    #tpc
+    #tcp
     src_ip_dic, des_ip_dic = addressCnt(tcp_capture)
     for ip in des_ip_dic.keys():
         data.updateIP(db, ip, des_ip_dic[ip], 'TCP')
@@ -35,8 +37,8 @@ def capturePackege(time = 0,inter = 'WLAN',filter = ''):
     capture = pyshark.LiveCapture(interface = inter,bpf_filter = filter)
     capture.clear()
     capture.sniff(timeout=time)
-    num = len(capture)
-    print('packet :',num)
+    # num = len(capture)
+    # print('packet :',num)
     #cap = pyshark.FileCapture('temp.cap')
     '''
     for packet in capture.sniff_continuously():
@@ -87,27 +89,34 @@ def transportFilter(capture, protocol):
 def gethttp(capture):
     layers = []
     for packege in capture:
+        #if packege.highest_layer == 'URLENCODED-FORM' or packege.highest_layer == 'HTTP':
         if packege.highest_layer == 'URLENCODED-FORM':
-            print(packege)
+            for webs in website:
+                #packege = str(packege)
+                #packege.encode('utf-8')
+                #print(packege)
+                if webs in str(packege):
+                    print(packege)
         #print(packege.http)
     return layers 
 
 # 敏感词检测（待优化
 def dirtyWordDetect(db,capture,pattern):
     for packege in capture:
-        string = str(packege)
-        result = re.findall(pattern, string, flags=0)
-        if result:
-            # 记录下这个敏感词内容以及来源
-            #t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  #获取当前时间(改为直接用数据库的时间戳)
-            for dirtyword in result:
-                data.dirtyWordRecord(db,packege.ip.src,dirtyword)
+        if packege.highest_layer == 'URLENCODED-FORM':
+            string = str(packege)
+            result = re.findall(pattern, string, flags=0)
+            if result:
+                # 记录下这个敏感词内容以及来源
+                #t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  #获取当前时间(改为直接用数据库的时间戳)
+                for dirtyword in result:
+                    data.dirtyWordRecord(db,packege.ip.src,dirtyword)
 
     return 
 
 #从数据库取出敏感词列表处理后作为匹配模式
 def getDirtyPattern(db):
-    pattern = 'shit'
+    pattern = '我不信这段话会被检测出来'
     wordlist = data.getDirtyWordList(db)
     for word in wordlist:
         # 按照或的形式取出
